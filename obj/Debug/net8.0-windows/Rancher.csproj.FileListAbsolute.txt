@@ -1,0 +1,14 @@
+C:\Users\mayan\.net\Rancher\bin\Debug\net8.0-windows\Rancher.exe
+C:\Users\mayan\.net\Rancher\bin\Debug\net8.0-windows\Rancher.deps.json
+C:\Users\mayan\.net\Rancher\bin\Debug\net8.0-windows\Rancher.runtimeconfig.json
+C:\Users\mayan\.net\Rancher\bin\Debug\net8.0-windows\Rancher.dll
+C:\Users\mayan\.net\Rancher\bin\Debug\net8.0-windows\Rancher.pdb
+C:\Users\mayan\.net\Rancher\obj\Debug\net8.0-windows\Rancher.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\mayan\.net\Rancher\obj\Debug\net8.0-windows\Rancher.AssemblyInfoInputs.cache
+C:\Users\mayan\.net\Rancher\obj\Debug\net8.0-windows\Rancher.AssemblyInfo.cs
+C:\Users\mayan\.net\Rancher\obj\Debug\net8.0-windows\Rancher.csproj.CoreCompileInputs.cache
+C:\Users\mayan\.net\Rancher\obj\Debug\net8.0-windows\Rancher.dll
+C:\Users\mayan\.net\Rancher\obj\Debug\net8.0-windows\refint\Rancher.dll
+C:\Users\mayan\.net\Rancher\obj\Debug\net8.0-windows\Rancher.pdb
+C:\Users\mayan\.net\Rancher\obj\Debug\net8.0-windows\Rancher.genruntimeconfig.cache
+C:\Users\mayan\.net\Rancher\obj\Debug\net8.0-windows\ref\Rancher.dll

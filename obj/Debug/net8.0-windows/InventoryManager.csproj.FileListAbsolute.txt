@@ -1,0 +1,14 @@
+C:\Users\mayan\.net\InventoryManager\obj\Debug\net8.0-windows\InventoryManager.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\mayan\.net\InventoryManager\obj\Debug\net8.0-windows\InventoryManager.AssemblyInfoInputs.cache
+C:\Users\mayan\.net\InventoryManager\obj\Debug\net8.0-windows\InventoryManager.AssemblyInfo.cs
+C:\Users\mayan\.net\InventoryManager\obj\Debug\net8.0-windows\InventoryManager.csproj.CoreCompileInputs.cache
+C:\Users\mayan\.net\InventoryManager\bin\Debug\net8.0-windows\InventoryManager.exe
+C:\Users\mayan\.net\InventoryManager\bin\Debug\net8.0-windows\InventoryManager.deps.json
+C:\Users\mayan\.net\InventoryManager\bin\Debug\net8.0-windows\InventoryManager.runtimeconfig.json
+C:\Users\mayan\.net\InventoryManager\bin\Debug\net8.0-windows\InventoryManager.dll
+C:\Users\mayan\.net\InventoryManager\bin\Debug\net8.0-windows\InventoryManager.pdb
+C:\Users\mayan\.net\InventoryManager\obj\Debug\net8.0-windows\InventoryManager.dll
+C:\Users\mayan\.net\InventoryManager\obj\Debug\net8.0-windows\refint\InventoryManager.dll
+C:\Users\mayan\.net\InventoryManager\obj\Debug\net8.0-windows\InventoryManager.pdb
+C:\Users\mayan\.net\InventoryManager\obj\Debug\net8.0-windows\InventoryManager.genruntimeconfig.cache
+C:\Users\mayan\.net\InventoryManager\obj\Debug\net8.0-windows\ref\InventoryManager.dll
