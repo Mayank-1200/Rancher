@@ -1,12 +1,13 @@
 using System;
 using System.Windows.Forms;
+using Rancher.Database;
 
 namespace Rancher
 {
     public partial class AddItemForm : Form
     {
         private DataGridView inventoryGrid;
-        private DataGridViewRow selectedRow;
+        private DataGridViewRow? selectedRow;
 
         // Constructor for Adding a New Item
         public AddItemForm(DataGridView grid)
@@ -26,7 +27,7 @@ namespace Rancher
             txtItemNumber.Text = row.Cells["ItemNumber"].Value.ToString();
             txtItemNumber.Enabled = false; // Prevent changing item number
             txtProductName.Text = row.Cells["ProductName"].Value.ToString();
-            txtSupplier.Text = row.Cells["Supplier"].Value.ToString(); // Changed from dropdown to text box
+            txtSupplier.Text = row.Cells["Supplier"].Value.ToString();
 
             if (!string.IsNullOrEmpty(row.Cells["Green"].Value?.ToString()))
                 numQuantity.Value = Convert.ToInt32(row.Cells["Green"].Value);
@@ -36,52 +37,61 @@ namespace Rancher
                 numQuantity.Value = Convert.ToInt32(row.Cells["Red"].Value);
         }
 
-        private void SaveItem(object sender, EventArgs e)
+        private async void SaveItem(object sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(txtItemNumber.Text) ||
                 string.IsNullOrWhiteSpace(txtProductName.Text) ||
-                string.IsNullOrWhiteSpace(txtSupplier.Text)) // Changed from dropdown check
+                string.IsNullOrWhiteSpace(txtSupplier.Text))
             {
                 MessageBox.Show("Please fill in all fields.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
+            string itemNumber = txtItemNumber.Text;
+            string productName = txtProductName.Text;
+            string supplier = txtSupplier.Text;
             int quantity = (int)numQuantity.Value;
 
-            // Ensure only one quantity field is populated
+            // Determine the stock category
             string green = quantity > 100 ? quantity.ToString() : "";
             string yellow = (quantity <= 100 && quantity >= 50) ? quantity.ToString() : "";
             string red = (quantity < 50) ? quantity.ToString() : "";
 
             if (selectedRow != null) // Modify Existing Item
             {
-                selectedRow.Cells["ProductName"].Value = txtProductName.Text;
-                selectedRow.Cells["Green"].Value = green;
-                selectedRow.Cells["Yellow"].Value = yellow;
-                selectedRow.Cells["Red"].Value = red;
-                selectedRow.Cells["Supplier"].Value = txtSupplier.Text; // Changed from dropdown to text box
+                // Update the item in the database
+                await NeonDbService.UpdateInventoryItem(itemNumber, productName, quantity, supplier);
+
+                // Update UI Table
+                int rowIndex = selectedRow.Index; // Get the index of the selected row
+                inventoryGrid.Rows[rowIndex].Cells["ProductName"].Value = productName;
+                inventoryGrid.Rows[rowIndex].Cells["Green"].Value = green;
+                inventoryGrid.Rows[rowIndex].Cells["Yellow"].Value = yellow;
+                inventoryGrid.Rows[rowIndex].Cells["Red"].Value = red;
+                inventoryGrid.Rows[rowIndex].Cells["Supplier"].Value = supplier;
+
+                this.DialogResult = DialogResult.OK; // Indicate that the item was modified
             }
             else // Add New Item
             {
-                // Check for duplicate item numbers
+                // Check for duplicate item number
                 foreach (DataGridViewRow row in inventoryGrid.Rows)
                 {
-                    if (row.Cells["ItemNumber"].Value?.ToString() == txtItemNumber.Text)
+                    if (row.Cells["ItemNumber"].Value?.ToString() == itemNumber)
                     {
                         MessageBox.Show("Item number already exists!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return;
                     }
                 }
 
-                inventoryGrid.Rows.Add(
-                    txtItemNumber.Text,
-                    txtProductName.Text,
-                    green,
-                    yellow,
-                    red,
-                    txtSupplier.Text // Changed from dropdown to text box
-                );
+                // Insert into database
+                await NeonDbService.AddInventoryItem(itemNumber, productName, quantity, supplier);
+
+                // Add to UI Table
+                inventoryGrid.Rows.Add(itemNumber, productName, green, yellow, red, supplier);
                 inventoryGrid.ClearSelection();
+
+                this.DialogResult = DialogResult.OK; // Indicate that a new item was added
             }
 
             this.Close();

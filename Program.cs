@@ -1,24 +1,40 @@
-namespace Rancher;
+using System;
+using System.Windows.Forms;
+using Rancher.Database; // Added for database connection check
 
-static class Program
+namespace Rancher
 {
-    /// <summary>
-    ///  The main entry point for the application.
-    /// </summary>
-    [STAThread]
-    static void Main()
+    static class Program
     {
-        // To customize application configuration such as set high DPI settings or default font,
-        // see https://aka.ms/applicationconfiguration.
-        ApplicationConfiguration.Initialize();
-
-        // Show SplashScreen first
-        using (SplashScreen splash = new SplashScreen())
+        /// <summary>
+        ///  The main entry point for the application.
+        /// </summary>
+        [STAThread]
+        static void Main()
         {
-            splash.ShowDialog();
-        }
+            ApplicationConfiguration.Initialize();
 
-        // Then open MainInventoryForm
-        Application.Run(new MainInventoryForm());
-    }    
+            try
+            {
+                // **Optional: Check Database Connection Before Proceeding**
+                using (var connection = DatabaseHelper.GetConnection())
+                {
+                    Console.WriteLine("Database connection established successfully.");
+                }
+
+                // **Show Splash Screen**
+                using (SplashScreen splash = new SplashScreen())
+                {
+                    splash.ShowDialog();
+                }
+
+                // **Launch Main Inventory Page**
+                Application.Run(new MainInventoryForm());
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("An unexpected error occurred: " + ex.Message, "Application Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+    }
 }
