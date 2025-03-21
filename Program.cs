@@ -1,6 +1,6 @@
 using System;
 using System.Windows.Forms;
-using Rancher.Database; // Added for database connection check
+using Rancher.Database; // For database connection check
 
 namespace Rancher
 {
@@ -16,7 +16,7 @@ namespace Rancher
 
             try
             {
-                // **Optional: Check Database Connection Before Proceeding**
+                // **Check Database Connection Before Proceeding**
                 using (var connection = DatabaseHelper.GetConnection())
                 {
                     Console.WriteLine("Database connection established successfully.");
@@ -28,8 +28,8 @@ namespace Rancher
                     splash.ShowDialog();
                 }
 
-                // **Launch Main Inventory Page**
-                Application.Run(new MainInventoryForm());
+                // **Launch MainForm Instead of MainInventoryForm**
+                Application.Run(new MainForm());  
             }
             catch (Exception ex)
             {
