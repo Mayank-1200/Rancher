@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Rancher")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c8da67b022eaa5fc66a19931c70a5ec197acb67e")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+24c94360e407bf5597af1f38aa241efdbca4afd0")]
 [assembly: System.Reflection.AssemblyProductAttribute("Rancher")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Rancher")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

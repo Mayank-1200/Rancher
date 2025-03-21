@@ -9,17 +9,7 @@ namespace Rancher.Database
 
         public static NpgsqlConnection GetConnection()
         {
-            try
-            {
-                var connection = new NpgsqlConnection(ConnectionString);
-                connection.Open();
-                return connection;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Database connection failed: " + ex.Message);
-                throw;
-            }
+            return new NpgsqlConnection(ConnectionString); // Do NOT open the connection here
         }
     }
 }
