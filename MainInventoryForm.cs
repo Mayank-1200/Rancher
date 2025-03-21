@@ -7,11 +7,12 @@ using Rancher.Database;
 
 namespace Rancher
 {
-    public partial class MainInventoryForm : UserControl
+    public partial class MainInventoryForm : Form
     {
         public MainInventoryForm()
         {
             InitializeComponent();
+            this.WindowState = FormWindowState.Maximized;
             this.Resize += MainInventoryForm_Resize;
             this.inventoryGrid.MouseClick += InventoryGrid_MouseClick;
 

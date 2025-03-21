@@ -29,7 +29,7 @@ namespace Rancher
                 }
 
                 // **Launch Main Inventory Page**
-                Application.Run(new MainForm());
+                Application.Run(new MainInventoryForm());
             }
             catch (Exception ex)
             {
