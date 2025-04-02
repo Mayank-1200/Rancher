@@ -8,6 +8,7 @@ namespace Rancher
     {
         private DataGridView inventoryGrid;
         private DataGridViewRow? selectedRow;
+        private int actualQuantity = 0; // Store actual_quantity separately
 
         // Constructor for Adding a New Item
         public AddItemForm(DataGridView grid)
@@ -46,7 +47,10 @@ namespace Rancher
                 int.TryParse(row.Cells["GreenThreshold"].Value?.ToString(), out greenThreshold);
             }
 
-            // Retrieve quantity from one of the color columns
+            // Retrieve actual quantity separately (Actual Quantity is not editable)
+            int.TryParse(row.Cells["ActualQuantity"].Value?.ToString(), out actualQuantity);
+
+            // Retrieve quantity (Threshold logic applies to this)
             int quantity = 0;
             if (int.TryParse(row.Cells["Green"].Value?.ToString(), out int greenQty))
                 quantity = greenQty;
@@ -86,18 +90,16 @@ namespace Rancher
 
             if (selectedRow != null) // Modify Existing Item
             {
-                // Update the item in the database
+                // Update the item in the database (Actual Quantity is not updated)
                 await NeonDbService.UpdateInventoryItem(itemNumber, productName, quantity, supplier, redThreshold, yellowThreshold, greenThreshold);
 
-                // Update UI Table
+                // Update UI Table (Actual Quantity remains unchanged)
                 int rowIndex = selectedRow.Index;
                 inventoryGrid.Rows[rowIndex].Cells["ProductName"].Value = productName;
                 inventoryGrid.Rows[rowIndex].Cells["Green"].Value = green;
                 inventoryGrid.Rows[rowIndex].Cells["Yellow"].Value = yellow;
                 inventoryGrid.Rows[rowIndex].Cells["Red"].Value = red;
                 inventoryGrid.Rows[rowIndex].Cells["Supplier"].Value = supplier;
-                
-                // Update threshold columns only if they exist
                 if (inventoryGrid.Columns.Contains("RedThreshold"))
                     inventoryGrid.Rows[rowIndex].Cells["RedThreshold"].Value = redThreshold;
                 if (inventoryGrid.Columns.Contains("YellowThreshold"))
@@ -119,11 +121,11 @@ namespace Rancher
                     }
                 }
 
-                // Insert into database
+                // Insert into database; Actual Quantity is **not** modified here
                 await NeonDbService.AddInventoryItem(itemNumber, productName, quantity, supplier, redThreshold, yellowThreshold, greenThreshold);
 
-                // Add to UI Table (assumes grid has columns for thresholds)
-                inventoryGrid.Rows.Add(itemNumber, productName, green, yellow, red, supplier, redThreshold, yellowThreshold, greenThreshold);
+                // Add to UI Table (Actual Quantity remains unchanged)
+                inventoryGrid.Rows.Add(itemNumber, productName, actualQuantity.ToString(), green, yellow, red, supplier, redThreshold, yellowThreshold, greenThreshold);
                 inventoryGrid.ClearSelection();
 
                 this.DialogResult = DialogResult.OK; // Indicate that a new item was added

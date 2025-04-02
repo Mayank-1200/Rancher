@@ -15,6 +15,7 @@ namespace Rancher.Database
             {
                 await conn.OpenAsync();
 
+                // Insert without modifying actual_quantity (it should be handled separately if needed)
                 string query = @"
                     INSERT INTO inventory (item_number, product_name, quantity, supplier, red_threshold, yellow_threshold, green_threshold)
                     VALUES (@itemNumber, @productName, @quantity, @supplier, @redThreshold, @yellowThreshold, @greenThreshold);";
@@ -62,6 +63,7 @@ namespace Rancher.Database
                         { "ItemNumber", reader["item_number"].ToString() },
                         { "ProductName", reader["product_name"].ToString() },
                         { "Quantity", reader.IsDBNull(reader.GetOrdinal("quantity")) ? 0 : reader.GetInt32(reader.GetOrdinal("quantity")) },
+                        { "ActualQuantity", reader.IsDBNull(reader.GetOrdinal("actual_quantity")) ? 0 : reader.GetInt32(reader.GetOrdinal("actual_quantity")) },
                         { "Supplier", reader["supplier"].ToString() },
                         { "RedThreshold", reader.IsDBNull(reader.GetOrdinal("red_threshold")) ? 0 : reader.GetInt32(reader.GetOrdinal("red_threshold")) },
                         { "YellowThreshold", reader.IsDBNull(reader.GetOrdinal("yellow_threshold")) ? 0 : reader.GetInt32(reader.GetOrdinal("yellow_threshold")) },
@@ -83,7 +85,7 @@ namespace Rancher.Database
             return items;
         }
 
-        // **3. Modify an Existing Item**
+        // **3. Modify an Existing Item (Does NOT update actual_quantity)**
         public static async Task UpdateInventoryItem(string itemNumber, string productName, int quantity, string supplier, int redThreshold, int yellowThreshold, int greenThreshold)
         {
             await using var conn = DatabaseHelper.GetConnection();
@@ -163,6 +165,7 @@ namespace Rancher.Database
                         { "ItemNumber", reader["item_number"].ToString() },
                         { "ProductName", reader["product_name"].ToString() },
                         { "Quantity", reader.IsDBNull(reader.GetOrdinal("quantity")) ? 0 : reader.GetInt32(reader.GetOrdinal("quantity")) },
+                        { "ActualQuantity", reader.IsDBNull(reader.GetOrdinal("actual_quantity")) ? 0 : reader.GetInt32(reader.GetOrdinal("actual_quantity")) },
                         { "Supplier", reader["supplier"].ToString() },
                         { "RedThreshold", reader.IsDBNull(reader.GetOrdinal("red_threshold")) ? 0 : reader.GetInt32(reader.GetOrdinal("red_threshold")) },
                         { "YellowThreshold", reader.IsDBNull(reader.GetOrdinal("yellow_threshold")) ? 0 : reader.GetInt32(reader.GetOrdinal("yellow_threshold")) },
