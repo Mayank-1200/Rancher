@@ -104,9 +104,11 @@ namespace Rancher
                     string yellow = (quantity <= yellowThreshold && quantity > redThreshold) ? quantity.ToString() : "";
                     string red = (quantity <= redThreshold) ? quantity.ToString() : "";
 
+                    // Add the row with the new Actual Quantity column (fetched from the database).
                     inventoryGrid.Rows.Add(
                         item.ContainsKey("ItemNumber") ? item["ItemNumber"].ToString() : "N/A",
                         item.ContainsKey("ProductName") ? item["ProductName"].ToString() : "Unknown",
+                        item.ContainsKey("ActualQuantity") ? item["ActualQuantity"].ToString() : "0",
                         green,
                         yellow,
                         red,
@@ -162,12 +164,8 @@ namespace Rancher
 
                 if (modifyForm.DialogResult == DialogResult.OK)
                 {
-                    string itemNumber = selectedRow.Cells["ItemNumber"].Value?.ToString();
-                    if (!string.IsNullOrEmpty(itemNumber))
-                    {
-                        // Refresh inventory data after modification.
-                        LoadInventoryData();
-                    }
+                    // Refresh inventory data after modification.
+                    LoadInventoryData();
                 }
             }
         }
@@ -194,6 +192,7 @@ namespace Rancher
                 }
             }
         }
+
         //press ctrl + R for reload function
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {

@@ -23,21 +23,23 @@ namespace Rancher
             this.addButton = new System.Windows.Forms.Button();
             this.contextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.inventoryGrid.EnableHeadersVisualStyles = false;
-            this.inventoryGrid.DefaultCellStyle.SelectionBackColor = SystemColors.Highlight; // Keeps selection color normal
-            this.inventoryGrid.DefaultCellStyle.SelectionForeColor = SystemColors.HighlightText;
+            this.inventoryGrid.DefaultCellStyle.SelectionBackColor = System.Drawing.SystemColors.Highlight; // Keeps selection color normal
+            this.inventoryGrid.DefaultCellStyle.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
 
             this.SuspendLayout();
 
             // 
             // inventoryGrid
             // 
-            this.inventoryGrid.Dock = DockStyle.Fill;
-            this.inventoryGrid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            this.inventoryGrid.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.inventoryGrid.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
             this.inventoryGrid.ReadOnly = true; // Disables manual edits
             this.inventoryGrid.AllowUserToAddRows = false;
             this.inventoryGrid.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.inventoryGrid.Columns.Add("ItemNumber", "Item Number");
-            this.inventoryGrid.Columns.Add("ProductName", "Product Name");
+            // Adding columns in the desired order
+            this.inventoryGrid.Columns.Add("ItemNumber", "Part Number");
+            this.inventoryGrid.Columns.Add("ProductName", "Part Name");
+            this.inventoryGrid.Columns.Add("ActualQuantity", "Actual Quantity");
             this.inventoryGrid.Columns.Add("Green", "Green (>100)");
             this.inventoryGrid.Columns.Add("Yellow", "Yellow (50-100)");
             this.inventoryGrid.Columns.Add("Red", "Red (0-50)");
@@ -48,7 +50,7 @@ namespace Rancher
             // addButton
             // 
             this.addButton.Text = "Add Item";
-            this.addButton.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            this.addButton.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             this.addButton.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.addButton.Height = 50; // Increased height
             this.addButton.Font = new System.Drawing.Font("Arial", 12, System.Drawing.FontStyle.Bold);
