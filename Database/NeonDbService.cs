@@ -7,24 +7,22 @@ namespace Rancher.Database
 {
     public static class NeonDbService
     {
-        // **1. Insert New Item into Inventory**
-        public static async Task AddInventoryItem(string itemNumber, string productName, int quantity, string supplier, int redThreshold, int yellowThreshold, int greenThreshold)
+        // 1. Add Inventory Item
+        public static async Task AddInventoryItem(string itemNumber, string productName, int quantity, int supplierId, int redThreshold, int yellowThreshold, int greenThreshold)
         {
             await using var conn = DatabaseHelper.GetConnection();
             try
             {
                 await conn.OpenAsync();
-
-                // Insert without modifying actual_quantity (it should be handled separately if needed)
                 string query = @"
-                    INSERT INTO inventory (item_number, product_name, quantity, supplier, red_threshold, yellow_threshold, green_threshold)
-                    VALUES (@itemNumber, @productName, @quantity, @supplier, @redThreshold, @yellowThreshold, @greenThreshold);";
+                    INSERT INTO inventory (item_number, product_name, quantity, supplier_id, red_threshold, yellow_threshold, green_threshold)
+                    VALUES (@itemNumber, @productName, @quantity, @supplierId, @redThreshold, @yellowThreshold, @greenThreshold);";
 
                 await using var cmd = new NpgsqlCommand(query, conn);
                 cmd.Parameters.AddWithValue("@itemNumber", itemNumber);
                 cmd.Parameters.AddWithValue("@productName", productName);
                 cmd.Parameters.AddWithValue("@quantity", quantity);
-                cmd.Parameters.AddWithValue("@supplier", supplier);
+                cmd.Parameters.AddWithValue("@supplierId", supplierId);
                 cmd.Parameters.AddWithValue("@redThreshold", redThreshold);
                 cmd.Parameters.AddWithValue("@yellowThreshold", yellowThreshold);
                 cmd.Parameters.AddWithValue("@greenThreshold", greenThreshold);
@@ -42,7 +40,7 @@ namespace Rancher.Database
             }
         }
 
-        // **2. Fetch All Items from Inventory**
+        // 2. Get All Inventory Items
         public static async Task<List<Dictionary<string, object>>> GetInventoryItems()
         {
             var items = new List<Dictionary<string, object>>();
@@ -51,8 +49,11 @@ namespace Rancher.Database
             try
             {
                 await conn.OpenAsync();
-                string query = "SELECT * FROM inventory;";
-                
+                string query = @"
+                    SELECT i.*, s.name AS supplier_name
+                    FROM inventory i
+                    LEFT JOIN suppliers s ON i.supplier_id = s.id;";
+
                 await using var cmd = new NpgsqlCommand(query, conn);
                 await using var reader = await cmd.ExecuteReaderAsync();
 
@@ -64,10 +65,11 @@ namespace Rancher.Database
                         { "ProductName", reader["product_name"].ToString() },
                         { "Quantity", reader.IsDBNull(reader.GetOrdinal("quantity")) ? 0 : reader.GetInt32(reader.GetOrdinal("quantity")) },
                         { "ActualQuantity", reader.IsDBNull(reader.GetOrdinal("actual_quantity")) ? 0 : reader.GetInt32(reader.GetOrdinal("actual_quantity")) },
-                        { "Supplier", reader["supplier"].ToString() },
+                        { "Supplier", reader["supplier_name"]?.ToString() ?? "Unknown" },
                         { "RedThreshold", reader.IsDBNull(reader.GetOrdinal("red_threshold")) ? 0 : reader.GetInt32(reader.GetOrdinal("red_threshold")) },
                         { "YellowThreshold", reader.IsDBNull(reader.GetOrdinal("yellow_threshold")) ? 0 : reader.GetInt32(reader.GetOrdinal("yellow_threshold")) },
-                        { "GreenThreshold", reader.IsDBNull(reader.GetOrdinal("green_threshold")) ? 0 : reader.GetInt32(reader.GetOrdinal("green_threshold")) }
+                        { "GreenThreshold", reader.IsDBNull(reader.GetOrdinal("green_threshold")) ? 0 : reader.GetInt32(reader.GetOrdinal("green_threshold")) },
+                        { "SupplierId", reader.IsDBNull(reader.GetOrdinal("supplier_id")) ? 0 : reader.GetInt32(reader.GetOrdinal("supplier_id")) }
                     };
                     items.Add(item);
                 }
@@ -85,8 +87,8 @@ namespace Rancher.Database
             return items;
         }
 
-        // **3. Modify an Existing Item (Does NOT update actual_quantity)**
-        public static async Task UpdateInventoryItem(string itemNumber, string productName, int quantity, string supplier, int redThreshold, int yellowThreshold, int greenThreshold)
+        // 3. Update Inventory Item
+        public static async Task UpdateInventoryItem(string itemNumber, string productName, int quantity, int supplierId, int redThreshold, int yellowThreshold, int greenThreshold)
         {
             await using var conn = DatabaseHelper.GetConnection();
             try
@@ -95,7 +97,7 @@ namespace Rancher.Database
 
                 string query = @"
                     UPDATE inventory
-                    SET product_name = @productName, quantity = @quantity, supplier = @supplier, 
+                    SET product_name = @productName, quantity = @quantity, supplier_id = @supplierId, 
                         red_threshold = @redThreshold, yellow_threshold = @yellowThreshold, green_threshold = @greenThreshold
                     WHERE item_number = @itemNumber;";
 
@@ -103,7 +105,7 @@ namespace Rancher.Database
                 cmd.Parameters.AddWithValue("@itemNumber", itemNumber);
                 cmd.Parameters.AddWithValue("@productName", productName);
                 cmd.Parameters.AddWithValue("@quantity", quantity);
-                cmd.Parameters.AddWithValue("@supplier", supplier);
+                cmd.Parameters.AddWithValue("@supplierId", supplierId);
                 cmd.Parameters.AddWithValue("@redThreshold", redThreshold);
                 cmd.Parameters.AddWithValue("@yellowThreshold", yellowThreshold);
                 cmd.Parameters.AddWithValue("@greenThreshold", greenThreshold);
@@ -121,7 +123,7 @@ namespace Rancher.Database
             }
         }
 
-        // **4. Delete an Item**
+        // 4. Delete Inventory Item
         public static async Task DeleteInventoryItem(string itemNumber)
         {
             await using var conn = DatabaseHelper.GetConnection();
@@ -129,7 +131,7 @@ namespace Rancher.Database
             {
                 await conn.OpenAsync();
                 string query = "DELETE FROM inventory WHERE item_number = @itemNumber;";
-                
+
                 await using var cmd = new NpgsqlCommand(query, conn);
                 cmd.Parameters.AddWithValue("@itemNumber", itemNumber);
                 await cmd.ExecuteNonQueryAsync();
@@ -145,37 +147,69 @@ namespace Rancher.Database
             }
         }
 
-        // **5. Fetch Single Item by Item Number**
-        public static async Task<Dictionary<string, object>?> GetInventoryItemByItemNumber(string itemNumber)
+        // 5. Get Supplier ID by Name (or insert if not exists)
+        public static async Task<int> GetOrInsertSupplierId(string name, string email, string phone, string note)
         {
             await using var conn = DatabaseHelper.GetConnection();
             try
             {
                 await conn.OpenAsync();
-                string query = "SELECT * FROM inventory WHERE item_number = @itemNumber;";
-                
+
+                string selectQuery = "SELECT id FROM suppliers WHERE name = @name LIMIT 1;";
+                await using var selectCmd = new NpgsqlCommand(selectQuery, conn);
+                selectCmd.Parameters.AddWithValue("@name", name);
+                var result = await selectCmd.ExecuteScalarAsync();
+
+                if (result != null)
+                    return Convert.ToInt32(result);
+
+                string insertQuery = "INSERT INTO suppliers (name, email, phone, note) VALUES (@name, @email, @phone, @note) RETURNING id;";
+                await using var insertCmd = new NpgsqlCommand(insertQuery, conn);
+                insertCmd.Parameters.AddWithValue("@name", name);
+                insertCmd.Parameters.AddWithValue("@email", email);
+                insertCmd.Parameters.AddWithValue("@phone", phone);
+                insertCmd.Parameters.AddWithValue("@note", note);
+
+                return Convert.ToInt32(await insertCmd.ExecuteScalarAsync());
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] GetOrInsertSupplierId: {ex.Message}");
+                throw;
+            }
+            finally
+            {
+                await conn.DisposeAsync();
+            }
+        }
+
+        // 6. Get Supplier Info by Name
+        public static async Task<Dictionary<string, string>?> GetSupplierByName(string name)
+        {
+            await using var conn = DatabaseHelper.GetConnection();
+            try
+            {
+                await conn.OpenAsync();
+                string query = "SELECT * FROM suppliers WHERE name = @name LIMIT 1;";
+
                 await using var cmd = new NpgsqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@itemNumber", itemNumber);
+                cmd.Parameters.AddWithValue("@name", name);
 
                 await using var reader = await cmd.ExecuteReaderAsync();
                 if (await reader.ReadAsync())
                 {
-                    return new Dictionary<string, object>
+                    return new Dictionary<string, string>
                     {
-                        { "ItemNumber", reader["item_number"].ToString() },
-                        { "ProductName", reader["product_name"].ToString() },
-                        { "Quantity", reader.IsDBNull(reader.GetOrdinal("quantity")) ? 0 : reader.GetInt32(reader.GetOrdinal("quantity")) },
-                        { "ActualQuantity", reader.IsDBNull(reader.GetOrdinal("actual_quantity")) ? 0 : reader.GetInt32(reader.GetOrdinal("actual_quantity")) },
-                        { "Supplier", reader["supplier"].ToString() },
-                        { "RedThreshold", reader.IsDBNull(reader.GetOrdinal("red_threshold")) ? 0 : reader.GetInt32(reader.GetOrdinal("red_threshold")) },
-                        { "YellowThreshold", reader.IsDBNull(reader.GetOrdinal("yellow_threshold")) ? 0 : reader.GetInt32(reader.GetOrdinal("yellow_threshold")) },
-                        { "GreenThreshold", reader.IsDBNull(reader.GetOrdinal("green_threshold")) ? 0 : reader.GetInt32(reader.GetOrdinal("green_threshold")) }
+                        { "Name", reader["name"].ToString() ?? "" },
+                        { "Email", reader["email"].ToString() ?? "" },
+                        { "Phone", reader["phone"].ToString() ?? "" },
+                        { "Note", reader["note"].ToString() ?? "" }
                     };
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[ERROR] GetInventoryItemByItemNumber: {ex.Message}");
+                Console.WriteLine($"[ERROR] GetSupplierByName: {ex.Message}");
                 throw;
             }
             finally
@@ -184,6 +218,39 @@ namespace Rancher.Database
             }
 
             return null;
+        }
+
+        // 7. Update Supplier Info
+        public static async Task UpdateSupplier(int id, string name, string email, string phone, string note)
+        {
+            await using var conn = DatabaseHelper.GetConnection();
+            try
+            {
+                await conn.OpenAsync();
+
+                string query = @"
+                    UPDATE suppliers
+                    SET name = @name, email = @email, phone = @phone, note = @note
+                    WHERE id = @id;";
+
+                await using var cmd = new NpgsqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@id", id);
+                cmd.Parameters.AddWithValue("@name", name);
+                cmd.Parameters.AddWithValue("@email", email);
+                cmd.Parameters.AddWithValue("@phone", phone);
+                cmd.Parameters.AddWithValue("@note", note);
+
+                await cmd.ExecuteNonQueryAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] UpdateSupplier: {ex.Message}");
+                throw;
+            }
+            finally
+            {
+                await conn.DisposeAsync();
+            }
         }
     }
 }

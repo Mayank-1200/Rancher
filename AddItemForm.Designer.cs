@@ -8,7 +8,10 @@ namespace Rancher
         private System.ComponentModel.IContainer components = null;
         private TextBox txtItemNumber;
         private TextBox txtProductName;
-        private TextBox txtSupplier;
+        private TextBox txtSupplierName;
+        public TextBox txtSupplierEmail;
+        public TextBox txtSupplierPhone;
+        public TextBox txtSupplierNote;
         private NumericUpDown numQuantity;
         private NumericUpDown numRedThreshold;
         private NumericUpDown numYellowThreshold;
@@ -19,15 +22,19 @@ namespace Rancher
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            this.txtItemNumber = new System.Windows.Forms.TextBox();
-            this.txtProductName = new System.Windows.Forms.TextBox();
-            this.txtSupplier = new System.Windows.Forms.TextBox();
-            this.numQuantity = new System.Windows.Forms.NumericUpDown();
-            this.numRedThreshold = new System.Windows.Forms.NumericUpDown();
-            this.numYellowThreshold = new System.Windows.Forms.NumericUpDown();
-            this.numGreenThreshold = new System.Windows.Forms.NumericUpDown();
-            this.btnSave = new System.Windows.Forms.Button();
-            this.btnCancel = new System.Windows.Forms.Button();
+            this.txtItemNumber = new TextBox();
+            this.txtProductName = new TextBox();
+            this.txtSupplierName = new TextBox();
+            this.txtSupplierEmail = new TextBox();
+            this.txtSupplierPhone = new TextBox();
+            this.txtSupplierNote = new TextBox();
+            this.numQuantity = new NumericUpDown();
+            this.numRedThreshold = new NumericUpDown();
+            this.numYellowThreshold = new NumericUpDown();
+            this.numGreenThreshold = new NumericUpDown();
+            this.btnSave = new Button();
+            this.btnCancel = new Button();
+
             ((System.ComponentModel.ISupportInitialize)(this.numQuantity)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numRedThreshold)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numYellowThreshold)).BeginInit();
@@ -35,78 +42,76 @@ namespace Rancher
 
             // Form Properties
             this.Text = "Add Item";
-            this.ClientSize = new System.Drawing.Size(420, 360);
+            this.ClientSize = new System.Drawing.Size(480, 500);
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.StartPosition = FormStartPosition.CenterParent;
 
+            int labelWidth = 140;
+            int inputLeft = 170;
+            int inputWidth = 270;
+            int topStart = 20;
+            int gap = 35;
+
             // Labels
-            Label lblItemNumber = new Label() { Text = "Item Number:", Left = 20, Top = 20, Width = 120 };
-            Label lblProductName = new Label() { Text = "Product Name:", Left = 20, Top = 60, Width = 120 };
-            Label lblQuantity = new Label() { Text = "Quantity:", Left = 20, Top = 100, Width = 120 };
-            Label lblSupplier = new Label() { Text = "Supplier:", Left = 20, Top = 140, Width = 120 };
-            Label lblRedThreshold = new Label() { Text = "Red Threshold:", Left = 20, Top = 180, Width = 120 };
-            Label lblYellowThreshold = new Label() { Text = "Yellow Threshold:", Left = 20, Top = 220, Width = 120 };
-            Label lblGreenThreshold = new Label() { Text = "Green Threshold:", Left = 20, Top = 260, Width = 120 };
+            Label lblItemNumber = new Label() { Text = "Item Number:", Left = 20, Top = topStart + 0 * gap, Width = labelWidth };
+            Label lblProductName = new Label() { Text = "Product Name:", Left = 20, Top = topStart + 1 * gap, Width = labelWidth };
+            Label lblQuantity = new Label() { Text = "Quantity:", Left = 20, Top = topStart + 2 * gap, Width = labelWidth };
+            Label lblSupplierName = new Label() { Text = "Supplier Name:", Left = 20, Top = topStart + 3 * gap, Width = labelWidth };
+            Label lblSupplierEmail = new Label() { Text = "Supplier Email:", Left = 20, Top = topStart + 4 * gap, Width = labelWidth };
+            Label lblSupplierPhone = new Label() { Text = "Supplier Phone:", Left = 20, Top = topStart + 5 * gap, Width = labelWidth };
+            Label lblSupplierNote = new Label() { Text = "Supplier Note:", Left = 20, Top = topStart + 6 * gap, Width = labelWidth };
+            Label lblRedThreshold = new Label() { Text = "Red Threshold:", Left = 20, Top = topStart + 7 * gap, Width = labelWidth };
+            Label lblYellowThreshold = new Label() { Text = "Yellow Threshold:", Left = 20, Top = topStart + 8 * gap, Width = labelWidth };
+            Label lblGreenThreshold = new Label() { Text = "Green Threshold:", Left = 20, Top = topStart + 9 * gap, Width = labelWidth };
 
             // TextBoxes & Inputs
-            this.txtItemNumber.Location = new System.Drawing.Point(150, 20);
-            this.txtItemNumber.Width = 230;
-
-            this.txtProductName.Location = new System.Drawing.Point(150, 60);
-            this.txtProductName.Width = 230;
-
-            this.numQuantity.Location = new System.Drawing.Point(150, 100);
-            this.numQuantity.Width = 230;
+            this.txtItemNumber.SetBounds(inputLeft, topStart + 0 * gap, inputWidth, 25);
+            this.txtProductName.SetBounds(inputLeft, topStart + 1 * gap, inputWidth, 25);
+            this.numQuantity.SetBounds(inputLeft, topStart + 2 * gap, inputWidth, 25);
             this.numQuantity.Minimum = 0;
-            this.numQuantity.Maximum = 100000; // Increased for larger stock numbers
+            this.numQuantity.Maximum = 100000;
 
-            this.txtSupplier.Location = new System.Drawing.Point(150, 140);
-            this.txtSupplier.Width = 230;
+            this.txtSupplierName.SetBounds(inputLeft, topStart + 3 * gap, inputWidth, 25);
+            this.txtSupplierEmail.SetBounds(inputLeft, topStart + 4 * gap, inputWidth, 25);
+            this.txtSupplierPhone.SetBounds(inputLeft, topStart + 5 * gap, inputWidth, 25);
+            this.txtSupplierNote.SetBounds(inputLeft, topStart + 6 * gap, inputWidth, 25);
 
-            // Threshold Numeric Fields
-            this.numRedThreshold.Location = new System.Drawing.Point(150, 180);
-            this.numRedThreshold.Width = 230;
+            this.numRedThreshold.SetBounds(inputLeft, topStart + 7 * gap, inputWidth, 25);
             this.numRedThreshold.Minimum = 0;
             this.numRedThreshold.Maximum = 100000;
 
-            this.numYellowThreshold.Location = new System.Drawing.Point(150, 220);
-            this.numYellowThreshold.Width = 230;
+            this.numYellowThreshold.SetBounds(inputLeft, topStart + 8 * gap, inputWidth, 25);
             this.numYellowThreshold.Minimum = 0;
             this.numYellowThreshold.Maximum = 100000;
 
-            this.numGreenThreshold.Location = new System.Drawing.Point(150, 260);
-            this.numGreenThreshold.Width = 230;
+            this.numGreenThreshold.SetBounds(inputLeft, topStart + 9 * gap, inputWidth, 25);
             this.numGreenThreshold.Minimum = 0;
             this.numGreenThreshold.Maximum = 100000;
 
             // Buttons
             this.btnSave.Text = "Save";
-            this.btnSave.Location = new System.Drawing.Point(100, 300);
-            this.btnSave.Width = 100;
-            this.btnSave.Click += new System.EventHandler(this.SaveItem);
+            this.btnSave.SetBounds(100, topStart + 10 * gap, 100, 35);
+            this.btnSave.Click += new EventHandler(this.SaveItem);
 
             this.btnCancel.Text = "Cancel";
-            this.btnCancel.Location = new System.Drawing.Point(220, 300);
-            this.btnCancel.Width = 100;
-            this.btnCancel.Click += new System.EventHandler(this.btnCancel_Click);
+            this.btnCancel.SetBounds(250, topStart + 10 * gap, 100, 35);
+            this.btnCancel.Click += new EventHandler(this.btnCancel_Click);
 
             // Add Controls
-            this.Controls.Add(lblItemNumber);
-            this.Controls.Add(this.txtItemNumber);
-            this.Controls.Add(lblProductName);
-            this.Controls.Add(this.txtProductName);
-            this.Controls.Add(lblQuantity);
-            this.Controls.Add(this.numQuantity);
-            this.Controls.Add(lblSupplier);
-            this.Controls.Add(this.txtSupplier);
-            this.Controls.Add(lblRedThreshold);
-            this.Controls.Add(this.numRedThreshold);
-            this.Controls.Add(lblYellowThreshold);
-            this.Controls.Add(this.numYellowThreshold);
-            this.Controls.Add(lblGreenThreshold);
-            this.Controls.Add(this.numGreenThreshold);
-            this.Controls.Add(this.btnSave);
-            this.Controls.Add(this.btnCancel);
+            this.Controls.AddRange(new Control[]
+            {
+                lblItemNumber, txtItemNumber,
+                lblProductName, txtProductName,
+                lblQuantity, numQuantity,
+                lblSupplierName, txtSupplierName,
+                lblSupplierEmail, txtSupplierEmail,
+                lblSupplierPhone, txtSupplierPhone,
+                lblSupplierNote, txtSupplierNote,
+                lblRedThreshold, numRedThreshold,
+                lblYellowThreshold, numYellowThreshold,
+                lblGreenThreshold, numGreenThreshold,
+                btnSave, btnCancel
+            });
 
             ((System.ComponentModel.ISupportInitialize)(this.numQuantity)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numRedThreshold)).EndInit();
@@ -117,9 +122,7 @@ namespace Rancher
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
-            {
                 components.Dispose();
-            }
             base.Dispose(disposing);
         }
     }

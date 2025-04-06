@@ -8,127 +8,139 @@ namespace Rancher
     {
         private DataGridView inventoryGrid;
         private DataGridViewRow? selectedRow;
-        private int actualQuantity = 0; // Store actual_quantity separately
+        private int actualQuantity = 0;
+        private int supplierId = 0;
 
-        // Constructor for Adding a New Item
         public AddItemForm(DataGridView grid)
         {
             InitializeComponent();
             inventoryGrid = grid;
         }
 
-        // Constructor for Modifying an Existing Item
         public AddItemForm(DataGridView grid, DataGridViewRow row)
         {
             InitializeComponent();
             inventoryGrid = grid;
             selectedRow = row;
 
-            // Populate existing data
             txtItemNumber.Text = row.Cells["ItemNumber"].Value?.ToString() ?? "";
-            txtItemNumber.Enabled = false; // Prevent changing item number
+            txtItemNumber.Enabled = false;
             txtProductName.Text = row.Cells["ProductName"].Value?.ToString() ?? "";
-            txtSupplier.Text = row.Cells["Supplier"].Value?.ToString() ?? "";
+            txtSupplierName.Text = row.Cells["Supplier"].Value?.ToString() ?? "";
 
-            // Set default threshold values
             int redThreshold = 10, yellowThreshold = 30, greenThreshold = 31;
 
-            // Only try to read threshold values if the columns exist in the DataGridView
             if (row.DataGridView.Columns.Contains("RedThreshold"))
-            {
                 int.TryParse(row.Cells["RedThreshold"].Value?.ToString(), out redThreshold);
-            }
             if (row.DataGridView.Columns.Contains("YellowThreshold"))
-            {
                 int.TryParse(row.Cells["YellowThreshold"].Value?.ToString(), out yellowThreshold);
-            }
             if (row.DataGridView.Columns.Contains("GreenThreshold"))
-            {
                 int.TryParse(row.Cells["GreenThreshold"].Value?.ToString(), out greenThreshold);
-            }
 
-            // Retrieve actual quantity separately (Actual Quantity is not editable)
             int.TryParse(row.Cells["ActualQuantity"].Value?.ToString(), out actualQuantity);
 
-            // Retrieve quantity (Threshold logic applies to this)
             int quantity = 0;
-            if (int.TryParse(row.Cells["Green"].Value?.ToString(), out int greenQty))
-                quantity = greenQty;
-            else if (int.TryParse(row.Cells["Yellow"].Value?.ToString(), out int yellowQty))
-                quantity = yellowQty;
-            else if (int.TryParse(row.Cells["Red"].Value?.ToString(), out int redQty))
-                quantity = redQty;
+            if (int.TryParse(row.Cells["Green"].Value?.ToString(), out int greenQty)) quantity = greenQty;
+            else if (int.TryParse(row.Cells["Yellow"].Value?.ToString(), out int yellowQty)) quantity = yellowQty;
+            else if (int.TryParse(row.Cells["Red"].Value?.ToString(), out int redQty)) quantity = redQty;
 
             numQuantity.Value = quantity;
             numRedThreshold.Value = redThreshold;
             numYellowThreshold.Value = yellowThreshold;
             numGreenThreshold.Value = greenThreshold;
+
+            _ = LoadSupplierDetailsAsync(txtSupplierName.Text);
+        }
+
+        private async Task LoadSupplierDetailsAsync(string supplierName)
+        {
+            try
+            {
+                var supplier = await NeonDbService.GetSupplierByName(supplierName);
+                if (supplier != null)
+                {
+                    txtSupplierEmail.Text = supplier["Email"];
+                    txtSupplierPhone.Text = supplier["Phone"];
+                    txtSupplierNote.Text = supplier["Note"];
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Failed to load supplier info: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private async void SaveItem(object sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(txtItemNumber.Text) ||
                 string.IsNullOrWhiteSpace(txtProductName.Text) ||
-                string.IsNullOrWhiteSpace(txtSupplier.Text))
+                string.IsNullOrWhiteSpace(txtSupplierName.Text))
             {
-                MessageBox.Show("Please fill in all fields.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Please fill in all required fields.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            string itemNumber = txtItemNumber.Text;
-            string productName = txtProductName.Text;
-            string supplier = txtSupplier.Text;
+            string itemNumber = txtItemNumber.Text.Trim();
+            string productName = txtProductName.Text.Trim();
+            string supplierName = txtSupplierName.Text.Trim();
+            string supplierEmail = txtSupplierEmail.Text.Trim();
+            string supplierPhone = txtSupplierPhone.Text.Trim();
+            string supplierNote = txtSupplierNote.Text.Trim();
+
             int quantity = (int)numQuantity.Value;
             int redThreshold = (int)numRedThreshold.Value;
             int yellowThreshold = (int)numYellowThreshold.Value;
             int greenThreshold = (int)numGreenThreshold.Value;
 
-            // Determine which column should hold the quantity based on threshold
             string green = (quantity > yellowThreshold) ? quantity.ToString() : "";
             string yellow = (quantity <= yellowThreshold && quantity > redThreshold) ? quantity.ToString() : "";
             string red = (quantity <= redThreshold) ? quantity.ToString() : "";
 
-            if (selectedRow != null) // Modify Existing Item
+            try
             {
-                // Update the item in the database (Actual Quantity is not updated)
-                await NeonDbService.UpdateInventoryItem(itemNumber, productName, quantity, supplier, redThreshold, yellowThreshold, greenThreshold);
+                int supplierId = await NeonDbService.GetOrInsertSupplierId(supplierName, supplierEmail, supplierPhone, supplierNote);
 
-                // Update UI Table (Actual Quantity remains unchanged)
-                int rowIndex = selectedRow.Index;
-                inventoryGrid.Rows[rowIndex].Cells["ProductName"].Value = productName;
-                inventoryGrid.Rows[rowIndex].Cells["Green"].Value = green;
-                inventoryGrid.Rows[rowIndex].Cells["Yellow"].Value = yellow;
-                inventoryGrid.Rows[rowIndex].Cells["Red"].Value = red;
-                inventoryGrid.Rows[rowIndex].Cells["Supplier"].Value = supplier;
-                if (inventoryGrid.Columns.Contains("RedThreshold"))
+                if (selectedRow != null)
+                {
+                    // Also update supplier info
+                    await NeonDbService.UpdateSupplier(supplierId, supplierName, supplierEmail, supplierPhone, supplierNote);
+
+                    await NeonDbService.UpdateInventoryItem(itemNumber, productName, quantity, supplierId, redThreshold, yellowThreshold, greenThreshold);
+
+                    int rowIndex = selectedRow.Index;
+                    inventoryGrid.Rows[rowIndex].Cells["ProductName"].Value = productName;
+                    inventoryGrid.Rows[rowIndex].Cells["Green"].Value = green;
+                    inventoryGrid.Rows[rowIndex].Cells["Yellow"].Value = yellow;
+                    inventoryGrid.Rows[rowIndex].Cells["Red"].Value = red;
+                    inventoryGrid.Rows[rowIndex].Cells["Supplier"].Value = supplierName;
                     inventoryGrid.Rows[rowIndex].Cells["RedThreshold"].Value = redThreshold;
-                if (inventoryGrid.Columns.Contains("YellowThreshold"))
                     inventoryGrid.Rows[rowIndex].Cells["YellowThreshold"].Value = yellowThreshold;
-                if (inventoryGrid.Columns.Contains("GreenThreshold"))
                     inventoryGrid.Rows[rowIndex].Cells["GreenThreshold"].Value = greenThreshold;
 
-                this.DialogResult = DialogResult.OK; // Indicate that the item was modified
-            }
-            else // Add New Item
-            {
-                // Check for duplicate item number
-                foreach (DataGridViewRow row in inventoryGrid.Rows)
-                {
-                    if (row.Cells["ItemNumber"].Value?.ToString() == itemNumber)
-                    {
-                        MessageBox.Show("Item number already exists!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        return;
-                    }
+                    this.DialogResult = DialogResult.OK;
                 }
+                else
+                {
+                    foreach (DataGridViewRow row in inventoryGrid.Rows)
+                    {
+                        if (row.Cells["ItemNumber"].Value?.ToString() == itemNumber)
+                        {
+                            MessageBox.Show("Item number already exists!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            return;
+                        }
+                    }
 
-                // Insert into database; Actual Quantity is **not** modified here
-                await NeonDbService.AddInventoryItem(itemNumber, productName, quantity, supplier, redThreshold, yellowThreshold, greenThreshold);
+                    await NeonDbService.AddInventoryItem(itemNumber, productName, quantity, supplierId, redThreshold, yellowThreshold, greenThreshold);
 
-                // Add to UI Table (Actual Quantity remains unchanged)
-                inventoryGrid.Rows.Add(itemNumber, productName, actualQuantity.ToString(), green, yellow, red, supplier, redThreshold, yellowThreshold, greenThreshold);
-                inventoryGrid.ClearSelection();
+                    inventoryGrid.Rows.Add(itemNumber, productName, actualQuantity.ToString(), green, yellow, red, supplierName, redThreshold, yellowThreshold, greenThreshold);
+                    inventoryGrid.ClearSelection();
 
-                this.DialogResult = DialogResult.OK; // Indicate that a new item was added
+                    this.DialogResult = DialogResult.OK;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error saving item: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
 
             this.Close();
