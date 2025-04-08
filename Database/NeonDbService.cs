@@ -252,5 +252,30 @@ namespace Rancher.Database
                 await conn.DisposeAsync();
             }
         }
+        
+        // 8. Add To Inventory Quantity
+        // This new method retrieves the current quantity from the inventory based on the item number and adds the provided additional quantity.
+        public static async Task AddToInventoryQuantity(string itemNumber, int additionalQuantity)
+        {
+            await using var conn = DatabaseHelper.GetConnection();
+            try
+            {
+                await conn.OpenAsync();
+                string query = "UPDATE inventory SET quantity = quantity + @additionalQuantity WHERE item_number = @itemNumber;";
+                await using var cmd = new NpgsqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@additionalQuantity", additionalQuantity);
+                cmd.Parameters.AddWithValue("@itemNumber", itemNumber);
+                await cmd.ExecuteNonQueryAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] AddToInventoryQuantity: {ex.Message}");
+                throw;
+            }
+            finally
+            {
+                await conn.DisposeAsync();
+            }
+        }
     }
 }

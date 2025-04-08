@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -47,6 +48,7 @@ namespace Rancher
         private Label filterLabel = new Label();
         private ComboBox filterComboBox = new ComboBox();
         private ProfessionalHeaderLabel headerLabel = new ProfessionalHeaderLabel();
+        private PictureBox logoBox = new PictureBox();
 
         private const int CardHeight = 180;
         private const int CardMargin = 20;
@@ -78,7 +80,7 @@ namespace Rancher
             filterPanel.WrapContents = false;
             filterPanel.BackColor = Color.Transparent;
 
-            filterLabel.Text = "Filter by Color";
+            filterLabel.Text = "Filter by Threshold:";
             filterLabel.Font = new Font("Segoe UI", 10, FontStyle.Bold);
             filterLabel.ForeColor = Color.FromArgb(60, 60, 60);
             filterLabel.TextAlign = ContentAlignment.MiddleLeft;
@@ -103,6 +105,7 @@ namespace Rancher
             filterPanel.Controls.Add(filterLabel);
             filterPanel.Controls.Add(filterComboBox);
 
+            // Scroll panel for cards
             scrollPanel.Dock = DockStyle.Left;
             scrollPanel.Width = 340;
             scrollPanel.AutoScroll = true;
@@ -114,7 +117,31 @@ namespace Rancher
             cardsHost.Width = CardWidth + CardMargin * 2;
             scrollPanel.Controls.Add(cardsHost);
 
+            // Right panel with logo
             rightPanel.Dock = DockStyle.Fill;
+            rightPanel.BackColor = Color.Transparent;
+            rightPanel.Padding = new Padding(0);
+
+            logoBox.Dock = DockStyle.Fill;
+            logoBox.SizeMode = PictureBoxSizeMode.Zoom;
+            logoBox.BackColor = Color.Transparent;
+
+            // Load logo image
+            string logoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logo_rancher.png");
+            if (File.Exists(logoPath))
+            {
+                logoBox.Image = Image.FromFile(logoPath);
+            }
+
+            rightPanel.Controls.Add(logoBox);
+            rightPanel.Resize += (s, e) =>
+            {
+                // Center the logo
+                logoBox.Location = new Point(
+                    (rightPanel.Width - logoBox.Width) / 2,
+                    (rightPanel.Height - logoBox.Height) / 2
+                );
+            };
 
             containerPanel.Dock = DockStyle.Fill;
             containerPanel.Controls.Add(rightPanel);
@@ -196,13 +223,17 @@ namespace Rancher
                               qty > red ? Color.Goldenrod :
                               Color.IndianRed;
 
-                Panel card = CreateItemCard(
-                    item.GetValueOrDefault("ItemNumber", "N/A").ToString(),
-                    item.GetValueOrDefault("ProductName", "Unknown").ToString(),
-                    qty,
-                    item.GetValueOrDefault("Supplier", "Unknown").ToString(),
-                    color
-                );
+                string itemNumber = item.GetValueOrDefault("ItemNumber", "N/A").ToString();
+                string productName = item.GetValueOrDefault("ProductName", "Unknown").ToString();
+                string supplier = item.GetValueOrDefault("Supplier", "Unknown").ToString();
+
+                // Create the card with the basic info
+                Panel card = CreateItemCard(itemNumber, productName, qty, supplier, color);
+
+                // Attach double-click event for updating quantity (only quantity will be updated)
+                card.DoubleClick += (s, e) => OpenUpdateQuantityPopup(itemNumber);
+                // Recursively attach double-click event to all child controls so the event triggers regardless of which control is clicked.
+                AttachDoubleClickEvent(card, itemNumber);
 
                 card.Top = y;
                 card.Left = CardMargin;
@@ -211,6 +242,20 @@ namespace Rancher
             }
 
             cardsHost.Height = y;
+        }
+
+        // Helper method to attach the double-click event recursively to all child controls.
+        private void AttachDoubleClickEvent(Control control, string itemNumber)
+        {
+            foreach (Control child in control.Controls)
+            {
+                child.DoubleClick += (s, e) => OpenUpdateQuantityPopup(itemNumber);
+                // Recursively apply to children controls.
+                if (child.HasChildren)
+                {
+                    AttachDoubleClickEvent(child, itemNumber);
+                }
+            }
         }
 
         private Panel CreateItemCard(string itemNumber, string productName, int quantity, string supplier, Color quantityColor)
@@ -294,6 +339,27 @@ namespace Rancher
             path.AddArc(arc, 90, 90);
             path.CloseFigure();
             return path;
+        }
+
+        // New helper method to open the quantity update popup form.
+        private async void OpenUpdateQuantityPopup(string itemNumber)
+        {
+            using (UpdateQuantityForm updateForm = new UpdateQuantityForm(itemNumber))
+            {
+                if (updateForm.ShowDialog() == DialogResult.OK)
+                {
+                    int additionalQuantity = updateForm.AdditionalQuantity;
+                    try
+                    {
+                        await NeonDbService.AddToInventoryQuantity(itemNumber, additionalQuantity);
+                        LoadInventoryData(); // Refresh inventory data after updating.
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Error updating quantity: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
         }
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
