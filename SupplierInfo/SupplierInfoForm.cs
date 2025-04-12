@@ -27,7 +27,7 @@ namespace Rancher
             this.Text = "Supplier Details";
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.StartPosition = FormStartPosition.CenterParent;
-            this.Size = new Size(400, 300);
+            this.Size = new Size(400, 320);
             this.MaximizeBox = false;
             this.MinimizeBox = false;
 
@@ -52,6 +52,7 @@ namespace Rancher
                 Text = "Close",
                 Left = 150,
                 Width = 100,
+                Height = 30,
                 Top = 230,
                 DialogResult = DialogResult.OK
             };

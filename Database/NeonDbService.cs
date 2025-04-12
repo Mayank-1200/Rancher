@@ -359,40 +359,7 @@ namespace Rancher.Database
             }
         }
 
-        // 12. Add Machine Parts
-        public static async Task AddMachineParts(int machineId, List<(string itemNumber, int quantity)> parts)
-        {
-            await using var conn = DatabaseHelper.GetConnection();
-            try
-            {
-                await conn.OpenAsync();
-
-                foreach (var (itemNumber, quantity) in parts)
-                {
-                    string query = @"
-                        INSERT INTO machine_parts (machine_id, inventory_item_number, required_quantity)
-                        VALUES (@machineId, @itemNumber, @quantity);";
-
-                    await using var cmd = new NpgsqlCommand(query, conn);
-                    cmd.Parameters.AddWithValue("@machineId", machineId);
-                    cmd.Parameters.AddWithValue("@itemNumber", itemNumber);
-                    cmd.Parameters.AddWithValue("@quantity", quantity);
-
-                    await cmd.ExecuteNonQueryAsync();
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[ERROR] AddMachineParts: {ex.Message}");
-                throw;
-            }
-            finally
-            {
-                await conn.DisposeAsync();
-            }
-        }
-
-        // 13. Get All Machines
+        // 12. Get All Machines
         public static async Task<List<Dictionary<string, object>>> GetAllMachines()
         {
             var machines = new List<Dictionary<string, object>>();
@@ -427,5 +394,59 @@ namespace Rancher.Database
 
             return machines;
         }
+
+        // 13. Delete Machine and Restore Inventory
+        public static async Task DeleteMachineAndRestoreInventory(int machineId)
+        {
+            await using var conn = DatabaseHelper.GetConnection();
+            try
+            {
+                await conn.OpenAsync();
+
+                // 1. Get all inventory parts and their actual quantities
+                string selectInventoryQuery = "SELECT item_number, actual_quantity FROM inventory WHERE actual_quantity > 0;";
+                List<(string itemNumber, int actualQty)> inventoryParts = new();
+
+                await using (var cmd = new NpgsqlCommand(selectInventoryQuery, conn))
+                await using (var reader = await cmd.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        string itemNumber = reader["item_number"].ToString() ?? "";
+                        int actualQty = Convert.ToInt32(reader["actual_quantity"]);
+                        if (!string.IsNullOrWhiteSpace(itemNumber) && actualQty > 0)
+                        {
+                            inventoryParts.Add((itemNumber, actualQty));
+                        }
+                    }
+                }
+
+                // 2. Add back actual quantities to inventory
+                foreach (var (itemNumber, actualQty) in inventoryParts)
+                {
+                    string updateQuery = "UPDATE inventory SET quantity = quantity + @amount WHERE item_number = @itemNumber;";
+                    await using var updateCmd = new NpgsqlCommand(updateQuery, conn);
+                    updateCmd.Parameters.AddWithValue("@amount", actualQty);
+                    updateCmd.Parameters.AddWithValue("@itemNumber", itemNumber);
+                    await updateCmd.ExecuteNonQueryAsync();
+                }
+
+                // 3. Delete the machine entry
+                string deleteQuery = "DELETE FROM machines WHERE id = @id;";
+                await using var deleteCmd = new NpgsqlCommand(deleteQuery, conn);
+                deleteCmd.Parameters.AddWithValue("@id", machineId);
+                await deleteCmd.ExecuteNonQueryAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] DeleteMachineAndRestoreInventory: {ex.Message}");
+                throw;
+            }
+            finally
+            {
+                await conn.DisposeAsync();
+            }
+        }
+
     }
 }
