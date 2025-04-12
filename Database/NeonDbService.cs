@@ -252,9 +252,8 @@ namespace Rancher.Database
                 await conn.DisposeAsync();
             }
         }
-        
+
         // 8. Add To Inventory Quantity
-        // This new method retrieves the current quantity from the inventory based on the item number and adds the provided additional quantity.
         public static async Task AddToInventoryQuantity(string itemNumber, int additionalQuantity)
         {
             await using var conn = DatabaseHelper.GetConnection();
@@ -276,6 +275,157 @@ namespace Rancher.Database
             {
                 await conn.DisposeAsync();
             }
+        }
+
+        // 9. Add Machine
+        public static async Task<int> AddMachine(string name)
+        {
+            await using var conn = DatabaseHelper.GetConnection();
+            try
+            {
+                await conn.OpenAsync();
+                string query = "INSERT INTO machines (name, created_at) VALUES (@name, NOW()) RETURNING id;";
+                await using var cmd = new NpgsqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@name", name);
+                return Convert.ToInt32(await cmd.ExecuteScalarAsync());
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] AddMachine: {ex.Message}");
+                throw;
+            }
+            finally
+            {
+                await conn.DisposeAsync();
+            }
+        }
+
+        // 10. Get Parts With Actual Quantity > 0
+        public static async Task<List<Dictionary<string, object>>> GetPartsWithActualQuantity()
+        {
+            var items = new List<Dictionary<string, object>>();
+            await using var conn = DatabaseHelper.GetConnection();
+
+            try
+            {
+                await conn.OpenAsync();
+                string query = "SELECT item_number, actual_quantity FROM inventory WHERE actual_quantity > 0;";
+                await using var cmd = new NpgsqlCommand(query, conn);
+                await using var reader = await cmd.ExecuteReaderAsync();
+
+                while (await reader.ReadAsync())
+                {
+                    items.Add(new Dictionary<string, object>
+                    {
+                        { "ItemNumber", reader["item_number"].ToString() },
+                        { "ActualQuantity", Convert.ToInt32(reader["actual_quantity"]) }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] GetPartsWithActualQuantity: {ex.Message}");
+                throw;
+            }
+            finally
+            {
+                await conn.DisposeAsync();
+            }
+
+            return items;
+        }
+
+        // 11. Subtract From Inventory
+        public static async Task SubtractFromInventory(string itemNumber, int amount)
+        {
+            await using var conn = DatabaseHelper.GetConnection();
+            try
+            {
+                await conn.OpenAsync();
+                string query = "UPDATE inventory SET quantity = quantity - @amount WHERE item_number = @itemNumber;";
+                await using var cmd = new NpgsqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@amount", amount);
+                cmd.Parameters.AddWithValue("@itemNumber", itemNumber);
+                await cmd.ExecuteNonQueryAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] SubtractFromInventory: {ex.Message}");
+                throw;
+            }
+            finally
+            {
+                await conn.DisposeAsync();
+            }
+        }
+
+        // 12. Add Machine Parts
+        public static async Task AddMachineParts(int machineId, List<(string itemNumber, int quantity)> parts)
+        {
+            await using var conn = DatabaseHelper.GetConnection();
+            try
+            {
+                await conn.OpenAsync();
+
+                foreach (var (itemNumber, quantity) in parts)
+                {
+                    string query = @"
+                        INSERT INTO machine_parts (machine_id, inventory_item_number, required_quantity)
+                        VALUES (@machineId, @itemNumber, @quantity);";
+
+                    await using var cmd = new NpgsqlCommand(query, conn);
+                    cmd.Parameters.AddWithValue("@machineId", machineId);
+                    cmd.Parameters.AddWithValue("@itemNumber", itemNumber);
+                    cmd.Parameters.AddWithValue("@quantity", quantity);
+
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] AddMachineParts: {ex.Message}");
+                throw;
+            }
+            finally
+            {
+                await conn.DisposeAsync();
+            }
+        }
+
+        // 13. Get All Machines
+        public static async Task<List<Dictionary<string, object>>> GetAllMachines()
+        {
+            var machines = new List<Dictionary<string, object>>();
+            await using var conn = DatabaseHelper.GetConnection();
+
+            try
+            {
+                await conn.OpenAsync();
+                string query = "SELECT id, name, created_at FROM machines ORDER BY created_at DESC;";
+                await using var cmd = new NpgsqlCommand(query, conn);
+                await using var reader = await cmd.ExecuteReaderAsync();
+
+                while (await reader.ReadAsync())
+                {
+                    machines.Add(new Dictionary<string, object>
+                    {
+                        { "Id", reader["id"].ToString() ?? "" },
+                        { "Name", reader["name"].ToString() ?? "" },
+                        { "CreatedAt", Convert.ToDateTime(reader["created_at"]).ToString("yyyy-MM-dd HH:mm:ss") }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] GetAllMachines: {ex.Message}");
+                throw;
+            }
+            finally
+            {
+                await conn.DisposeAsync();
+            }
+
+            return machines;
         }
     }
 }

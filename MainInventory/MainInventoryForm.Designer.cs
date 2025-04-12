@@ -48,6 +48,16 @@ namespace Rancher
             this.inventoryGrid.Columns.Add("Red", "Red (0-50)");
             this.inventoryGrid.Columns.Add("Supplier", "Supplier");
 
+            // ✅ Add hidden threshold columns for internal logic
+            this.inventoryGrid.Columns.Add("RedThreshold", "Red Threshold");
+            this.inventoryGrid.Columns.Add("YellowThreshold", "Yellow Threshold");
+            this.inventoryGrid.Columns.Add("GreenThreshold", "Green Threshold");
+
+            // ✅ Hide them from UI
+            this.inventoryGrid.Columns["RedThreshold"].Visible = false;
+            this.inventoryGrid.Columns["YellowThreshold"].Visible = false;
+            this.inventoryGrid.Columns["GreenThreshold"].Visible = false;
+
             this.inventoryGrid.CellFormatting += new System.Windows.Forms.DataGridViewCellFormattingEventHandler(this.inventoryGrid_CellFormatting);
 
             // 

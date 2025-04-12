@@ -55,12 +55,12 @@ namespace Rancher
 
         private void LoadInventoryPage()
         {
-            LoadPage(new MainInventoryForm()); 
+            LoadPage(new MainInventoryForm());
         }
 
         private void LoadMachinePage()
         {
-            MessageBox.Show("Machine Page will be implemented soon.");
+            LoadPage(new MachinePage());
         }
 
         private void LoadPage(Control page)
