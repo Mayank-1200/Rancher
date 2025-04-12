@@ -90,11 +90,11 @@ namespace Rancher
 
             // Buttons
             this.btnSave.Text = "Save";
-            this.btnSave.SetBounds(100, topStart + 10 * gap, 100, 35);
+            this.btnSave.SetBounds(100, topStart + 11 * gap, 100, 35);
             this.btnSave.Click += new EventHandler(this.SaveItem);
 
             this.btnCancel.Text = "Cancel";
-            this.btnCancel.SetBounds(250, topStart + 10 * gap, 100, 35);
+            this.btnCancel.SetBounds(250, topStart + 11 * gap, 100, 35);
             this.btnCancel.Click += new EventHandler(this.btnCancel_Click);
 
             // Add Controls

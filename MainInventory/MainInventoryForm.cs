@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using ClosedXML.Excel; // ✅ ClosedXML instead of EPPlus
 using Rancher.Database;
 
 namespace Rancher
@@ -199,6 +201,66 @@ namespace Rancher
             catch (Exception ex)
             {
                 MessageBox.Show("Error fetching supplier: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void ExportButton_Click(object sender, EventArgs e)
+        {
+            ExportToExcel();
+        }
+
+        private void ExportToExcel()
+        {
+            using (SaveFileDialog saveFileDialog = new SaveFileDialog())
+            {
+                saveFileDialog.Filter = "Excel Files|*.xlsx";
+                saveFileDialog.Title = "Export Inventory to Excel";
+                saveFileDialog.FileName = "Inventory.xlsx";
+
+                if (saveFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    try
+                    {
+                        using (var workbook = new XLWorkbook())
+                        {
+                            var worksheet = workbook.Worksheets.Add("Inventory");
+
+                            // Write headers
+                            int colIndex = 1;
+                            foreach (DataGridViewColumn column in inventoryGrid.Columns)
+                            {
+                                if (column.Visible)
+                                {
+                                    worksheet.Cell(1, colIndex).Value = column.HeaderText;
+                                    colIndex++;
+                                }
+                            }
+
+                            // Write data
+                            for (int i = 0; i < inventoryGrid.Rows.Count; i++)
+                            {
+                                int visibleColIndex = 1;
+                                for (int j = 0; j < inventoryGrid.Columns.Count; j++)
+                                {
+                                    if (inventoryGrid.Columns[j].Visible)
+                                    {
+                                        var value = inventoryGrid.Rows[i].Cells[j].Value?.ToString() ?? "";
+                                        worksheet.Cell(i + 2, visibleColIndex).Value = value;
+                                        visibleColIndex++;
+                                    }
+                                }
+                            }
+
+                            workbook.SaveAs(saveFileDialog.FileName);
+                        }
+
+                        MessageBox.Show("Inventory exported successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Export failed: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
             }
         }
 

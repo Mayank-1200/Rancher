@@ -1,5 +1,6 @@
 using System;
 using System.Windows.Forms;
+using System.Drawing; // Required for Icon
 
 namespace Rancher
 {
@@ -10,6 +11,10 @@ namespace Rancher
         public MainForm()
         {
             InitializeComponent();
+
+            // Set application icon
+            this.Icon = new Icon("Resources/rancher_icon.ico");
+
             this.WindowState = FormWindowState.Maximized;
             LoadHomePage(); // Load Home page initially
         }
@@ -26,7 +31,7 @@ namespace Rancher
             ToolStripMenuItem homeMenu = new ToolStripMenuItem("Home");
             ToolStripMenuItem inventoryMenu = new ToolStripMenuItem("Main Inventory");
             ToolStripMenuItem machineMenu = new ToolStripMenuItem("Machine Page");
-            ToolStripMenuItem placeholderMenu = new ToolStripMenuItem("Placeholder");
+            // ToolStripMenuItem placeholderMenu = new ToolStripMenuItem("Placeholder");
 
             homeMenu.Click += (s, e) => LoadHomePage();
             inventoryMenu.Click += (s, e) => LoadInventoryPage();
@@ -35,7 +40,7 @@ namespace Rancher
             menuStrip.Items.Add(homeMenu);
             menuStrip.Items.Add(inventoryMenu);
             menuStrip.Items.Add(machineMenu);
-            menuStrip.Items.Add(placeholderMenu);
+            // menuStrip.Items.Add(placeholderMenu);
 
             this.MainMenuStrip = menuStrip;
             this.Controls.Add(menuStrip);
