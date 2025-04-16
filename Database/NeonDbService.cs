@@ -448,5 +448,42 @@ namespace Rancher.Database
             }
         }
 
+        // 14. Get All Suppliers
+        public static async Task<List<Dictionary<string, string>>> GetAllSuppliers()
+        {
+            var suppliers = new List<Dictionary<string, string>>();
+            await using var conn = DatabaseHelper.GetConnection();
+
+            try
+            {
+                await conn.OpenAsync();
+                string query = "SELECT id, name, email, phone, note FROM suppliers ORDER BY name ASC;";
+                await using var cmd = new NpgsqlCommand(query, conn);
+                await using var reader = await cmd.ExecuteReaderAsync();
+
+                while (await reader.ReadAsync())
+                {
+                    suppliers.Add(new Dictionary<string, string>
+                    {
+                        { "Id", reader["id"].ToString() ?? "" },
+                        { "Name", reader["name"].ToString() ?? "" },
+                        { "Email", reader["email"].ToString() ?? "" },
+                        { "Phone", reader["phone"].ToString() ?? "" },
+                        { "Note", reader["note"].ToString() ?? "" }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] GetAllSuppliers: {ex.Message}");
+                throw;
+            }
+            finally
+            {
+                await conn.DisposeAsync();
+            }
+
+            return suppliers;
+        }
     }
 }
