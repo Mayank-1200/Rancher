@@ -31,16 +31,17 @@ namespace Rancher
             ToolStripMenuItem homeMenu = new ToolStripMenuItem("Home");
             ToolStripMenuItem inventoryMenu = new ToolStripMenuItem("Main Inventory");
             ToolStripMenuItem machineMenu = new ToolStripMenuItem("Machine Page");
-            // ToolStripMenuItem placeholderMenu = new ToolStripMenuItem("Placeholder");
+            ToolStripMenuItem suppliersMenu = new ToolStripMenuItem("Suppliers"); // New
 
             homeMenu.Click += (s, e) => LoadHomePage();
             inventoryMenu.Click += (s, e) => LoadInventoryPage();
             machineMenu.Click += (s, e) => LoadMachinePage();
+            suppliersMenu.Click += (s, e) => LoadSuppliersPage(); // New
 
             menuStrip.Items.Add(homeMenu);
             menuStrip.Items.Add(inventoryMenu);
             menuStrip.Items.Add(machineMenu);
-            // menuStrip.Items.Add(placeholderMenu);
+            menuStrip.Items.Add(suppliersMenu); // New
 
             this.MainMenuStrip = menuStrip;
             this.Controls.Add(menuStrip);
@@ -66,6 +67,11 @@ namespace Rancher
         private void LoadMachinePage()
         {
             LoadPage(new MachinePage());
+        }
+
+        private void LoadSuppliersPage() // New
+        {
+            LoadPage(new SuppliersPage());
         }
 
         private void LoadPage(Control page)
