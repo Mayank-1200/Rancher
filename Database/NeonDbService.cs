@@ -519,7 +519,7 @@ namespace Rancher.Database
             return suppliers;
         }
 
-        
+
         // 15. Insert Entry Log (Inward/Outward) - UPDATED
         public static async Task InsertEntryLog(string itemNumber, int quantity, string entryType, string supplierName, string supplierNote)
         {
@@ -589,7 +589,7 @@ namespace Rancher.Database
             }
 
             return supplierNames;
-        }        
+        }
 
         // 17. Get Entry Logs (Optional Type Filter: "inward" or "outward")
         public static async Task<List<Dictionary<string, object>>> GetEntryLogs(string? type = null)
@@ -646,6 +646,48 @@ namespace Rancher.Database
             }
 
             return logs;
+        }
+        
+        // 18. Search Inventory by Partial Product Name or Item Number (Improved)
+        public static async Task<List<Dictionary<string, string>>> SearchInventoryByProductName(string partialName)
+        {
+            var results = new List<Dictionary<string, string>>();
+            await using var conn = DatabaseHelper.GetConnection();
+
+            try
+            {
+                await conn.OpenAsync();
+                string query = @"
+                    SELECT item_number, product_name
+                    FROM inventory
+                    WHERE product_name ILIKE @partial OR item_number ILIKE @partial
+                    ORDER BY product_name ASC
+                    LIMIT 15;";
+
+                await using var cmd = new NpgsqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@partial", $"%{partialName}%");
+
+                await using var reader = await cmd.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    results.Add(new Dictionary<string, string>
+                    {
+                        { "ItemNumber", reader["item_number"].ToString() ?? "" },
+                        { "ProductName", reader["product_name"].ToString() ?? "" }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ERROR] SearchInventoryByProductName: {ex.Message}");
+                throw;
+            }
+            finally
+            {
+                await conn.DisposeAsync();
+            }
+
+            return results;
         }
     }
 }

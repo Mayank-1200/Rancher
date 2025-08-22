@@ -4,8 +4,10 @@ using System.Drawing;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using ClosedXML.Excel; // ✅ ClosedXML instead of EPPlus
 using Rancher.Database;
+using PdfSharpCore.Drawing;
+using PdfSharpCore.Pdf;
+using System.Reflection;
 
 namespace Rancher
 {
@@ -39,30 +41,30 @@ namespace Rancher
 
         private void ApplyUIEnhancements()
         {
-            this.BackColor = Color.FromArgb(240, 240, 240);
-            inventoryGrid.BorderStyle = BorderStyle.FixedSingle;
-            inventoryGrid.BackgroundColor = Color.FromArgb(220, 215, 200);
+            this.BackColor = System.Drawing.Color.FromArgb(240, 240, 240);
+            inventoryGrid.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            inventoryGrid.BackgroundColor = System.Drawing.Color.FromArgb(220, 215, 200);
             inventoryGrid.EnableHeadersVisualStyles = false;
             inventoryGrid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
 
-            inventoryGrid.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(200, 200, 200);
-            inventoryGrid.ColumnHeadersDefaultCellStyle.ForeColor = Color.Black;
-            inventoryGrid.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10, FontStyle.Bold);
+            inventoryGrid.ColumnHeadersDefaultCellStyle.BackColor = System.Drawing.Color.FromArgb(200, 200, 200);
+            inventoryGrid.ColumnHeadersDefaultCellStyle.ForeColor = System.Drawing.Color.Black;
+            inventoryGrid.ColumnHeadersDefaultCellStyle.Font = new System.Drawing.Font("Segoe UI", 10, System.Drawing.FontStyle.Bold);
             inventoryGrid.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
             inventoryGrid.ColumnHeadersDefaultCellStyle.Padding = new Padding(5);
             inventoryGrid.ColumnHeadersDefaultCellStyle.WrapMode = DataGridViewTriState.True;
             inventoryGrid.ColumnHeadersHeight = 40;
 
             inventoryGrid.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
-            inventoryGrid.GridColor = Color.FromArgb(180, 180, 180);
+            inventoryGrid.GridColor = System.Drawing.Color.FromArgb(180, 180, 180);
 
-            inventoryGrid.DefaultCellStyle.SelectionBackColor = Color.LightSteelBlue;
-            inventoryGrid.DefaultCellStyle.SelectionForeColor = Color.Black;
-            inventoryGrid.DefaultCellStyle.Font = new Font("Segoe UI", 9);
+            inventoryGrid.DefaultCellStyle.SelectionBackColor = System.Drawing.Color.LightSteelBlue;
+            inventoryGrid.DefaultCellStyle.SelectionForeColor = System.Drawing.Color.Black;
+            inventoryGrid.DefaultCellStyle.Font = new System.Drawing.Font("Segoe UI", 9);
             inventoryGrid.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft;
 
             inventoryGrid.RowTemplate.Height = 35;
-            inventoryGrid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(230, 230, 230);
+            inventoryGrid.AlternatingRowsDefaultCellStyle.BackColor = System.Drawing.Color.FromArgb(230, 230, 230);
         }
 
         private async void LoadInventoryData()
@@ -115,9 +117,9 @@ namespace Rancher
                 {
                     if (row.Cells[columnName].Value != null && int.TryParse(row.Cells[columnName].Value.ToString(), out int qty))
                     {
-                        if (columnName == "Green") row.Cells[columnName].Style.BackColor = Color.LightGreen;
-                        else if (columnName == "Yellow") row.Cells[columnName].Style.BackColor = Color.Yellow;
-                        else if (columnName == "Red") row.Cells[columnName].Style.BackColor = Color.LightCoral;
+                        if (columnName == "Green") row.Cells[columnName].Style.BackColor = System.Drawing.Color.LightGreen;
+                        else if (columnName == "Yellow") row.Cells[columnName].Style.BackColor = System.Drawing.Color.Yellow;
+                        else if (columnName == "Red") row.Cells[columnName].Style.BackColor = System.Drawing.Color.LightCoral;
                     }
                 }
             }
@@ -155,7 +157,7 @@ namespace Rancher
                     try
                     {
                         await NeonDbService.DeleteInventoryItem(itemNumber);
-                        LoadInventoryData(); // Reload the grid fresh
+                        LoadInventoryData();
                     }
                     catch (Exception ex)
                     {
@@ -205,59 +207,133 @@ namespace Rancher
 
         private void ExportButton_Click(object sender, EventArgs e)
         {
-            ExportToExcel();
+            ExportToPdf();
         }
 
-        private void ExportToExcel()
+        private void ExportToPdf()
         {
             using (SaveFileDialog saveFileDialog = new SaveFileDialog())
             {
-                saveFileDialog.Filter = "Excel Files|*.xlsx";
-                saveFileDialog.Title = "Export Inventory to Excel";
-                saveFileDialog.FileName = "Inventory.xlsx";
+                saveFileDialog.Filter = "PDF Files|*.pdf";
+                saveFileDialog.Title = "Export Inventory to PDF";
+                saveFileDialog.FileName = "Inventory.pdf";
 
                 if (saveFileDialog.ShowDialog() == DialogResult.OK)
                 {
                     try
                     {
-                        using (var workbook = new XLWorkbook())
+                        PdfSharpCore.Fonts.GlobalFontSettings.FontResolver ??= new FontResolver();
+
+                        var pdf = new PdfSharpCore.Pdf.PdfDocument();
+                        var page = pdf.AddPage();
+                        var gfx = PdfSharpCore.Drawing.XGraphics.FromPdfPage(page);
+                        var font = new PdfSharpCore.Drawing.XFont("Arial", 10);
+                        var boldFont = new PdfSharpCore.Drawing.XFont("Arial", 10, PdfSharpCore.Drawing.XFontStyle.Bold);
+
+                        double margin = 40;
+                        double y = margin;
+                        double baseRowHeight = 20;
+
+                        // Count visible columns
+                        var visibleCols = new List<DataGridViewColumn>();
+                        foreach (DataGridViewColumn col in inventoryGrid.Columns)
                         {
-                            var worksheet = workbook.Worksheets.Add("Inventory");
-
-                            // Write headers
-                            int colIndex = 1;
-                            foreach (DataGridViewColumn column in inventoryGrid.Columns)
-                            {
-                                if (column.Visible)
-                                {
-                                    worksheet.Cell(1, colIndex).Value = column.HeaderText;
-                                    colIndex++;
-                                }
-                            }
-
-                            // Write data
-                            for (int i = 0; i < inventoryGrid.Rows.Count; i++)
-                            {
-                                int visibleColIndex = 1;
-                                for (int j = 0; j < inventoryGrid.Columns.Count; j++)
-                                {
-                                    if (inventoryGrid.Columns[j].Visible)
-                                    {
-                                        var value = inventoryGrid.Rows[i].Cells[j].Value?.ToString() ?? "";
-                                        worksheet.Cell(i + 2, visibleColIndex).Value = value;
-                                        visibleColIndex++;
-                                    }
-                                }
-                            }
-
-                            workbook.SaveAs(saveFileDialog.FileName);
+                            if (col.Visible) visibleCols.Add(col);
                         }
 
-                        MessageBox.Show("Inventory exported successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        int colCount = visibleCols.Count;
+                        double totalWidth = page.Width - 2 * margin;
+
+                        // Assign custom widths
+                        Dictionary<string, double> colWidths = new();
+                        double partColWidth = totalWidth * 0.3;
+                        double otherColWidth = (totalWidth - partColWidth * 2) / (colCount - 2);
+
+                        foreach (var col in visibleCols)
+                        {
+                            if (col.Name == "ItemNumber" || col.Name == "ProductName")
+                                colWidths[col.Name] = partColWidth;
+                            else
+                                colWidths[col.Name] = otherColWidth;
+                        }
+
+                        // Draw header
+                        double x = margin;
+                        foreach (var col in visibleCols)
+                        {
+                            double w = colWidths[col.Name];
+
+                            gfx.DrawRectangle(PdfSharpCore.Drawing.XBrushes.LightGray, x, y, w, baseRowHeight);
+                            gfx.DrawRectangle(PdfSharpCore.Drawing.XPens.Black, x, y, w, baseRowHeight);
+                            gfx.DrawString(col.HeaderText, boldFont, PdfSharpCore.Drawing.XBrushes.Black,
+                                new PdfSharpCore.Drawing.XRect(x + 3, y + 3, w - 6, baseRowHeight),
+                                PdfSharpCore.Drawing.XStringFormats.TopLeft);
+
+                            x += w;
+                        }
+
+                        y += baseRowHeight;
+
+                        // Draw data rows
+                        foreach (DataGridViewRow row in inventoryGrid.Rows)
+                        {
+                            if (y > page.Height - margin)
+                            {
+                                page = pdf.AddPage();
+                                gfx = PdfSharpCore.Drawing.XGraphics.FromPdfPage(page);
+                                y = margin;
+                            }
+
+                            // Measure tallest cell for row
+                            double rowHeight = baseRowHeight;
+
+                            foreach (var col in visibleCols)
+                            {
+                                string text = row.Cells[col.Index].Value?.ToString() ?? "";
+                                double w = colWidths[col.Name];
+                                var size = gfx.MeasureString(text, font);
+
+                                int lines = (int)Math.Ceiling(size.Width / (w - 6));
+                                double height = lines * baseRowHeight;
+
+                                if (height > rowHeight)
+                                    rowHeight = height;
+                            }
+
+                            // Draw each cell
+                            x = margin;
+                            foreach (var col in visibleCols)
+                            {
+                                string text = row.Cells[col.Index].Value?.ToString() ?? "";
+                                double w = colWidths[col.Name];
+
+                                var background = PdfSharpCore.Drawing.XBrushes.White;
+                                if (col.Name == "Green" && !string.IsNullOrEmpty(text))
+                                    background = PdfSharpCore.Drawing.XBrushes.LightGreen;
+                                else if (col.Name == "Yellow" && !string.IsNullOrEmpty(text))
+                                    background = PdfSharpCore.Drawing.XBrushes.Yellow;
+                                else if (col.Name == "Red" && !string.IsNullOrEmpty(text))
+                                    background = PdfSharpCore.Drawing.XBrushes.LightCoral;
+
+                                gfx.DrawRectangle(background, x, y, w, rowHeight);
+                                gfx.DrawRectangle(PdfSharpCore.Drawing.XPens.Black, x, y, w, rowHeight);
+
+                                gfx.DrawString(text, font, PdfSharpCore.Drawing.XBrushes.Black,
+                                    new PdfSharpCore.Drawing.XRect(x + 3, y + 3, w - 6, rowHeight),
+                                    PdfSharpCore.Drawing.XStringFormats.TopLeft);
+
+                                x += w;
+                            }
+
+                            y += rowHeight;
+                        }
+
+                        pdf.Save(saveFileDialog.FileName);
+                        MessageBox.Show("Inventory exported successfully to PDF!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show("Export failed: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("Export to PDF failed: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
             }
